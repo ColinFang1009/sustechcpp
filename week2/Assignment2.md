@@ -18,7 +18,7 @@ Requirement 5 poses some challenges to me at first since we have deal with the o
 
 #### Part 2. Code
 
-Due to the length of the code (over 500 lines), I hosted my source code at GitHub via [https://github.com/ColinFang1009/sustechcpp/tree/master/week2](https://github.com/ColinFang1009/sustechcpp/tree/master/week2). I also uploaded my source code together with this report just in case.
+Due to the length of the code (~ 600 lines), I hosted my source code at GitHub via [https://github.com/ColinFang1009/sustechcpp/tree/master/week2](https://github.com/ColinFang1009/sustechcpp/tree/master/week2). I also uploaded my source code together with this report just in case.
 
 #### Part 3. Result & Verification
 
@@ -97,6 +97,28 @@ Such operation is something that I failed to implement in assignment 1. After fi
 Screenshot for case #6:
 
 ![case6](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case6.png)
+
+Test case #7: high-precision subtraction
+
+```
+Input: 1000000000000000000000000000000000.2222222222222222222222-1.0
+Output:999999999999999999999999999999999.2222222222222222222222
+```
+
+Screenshot for case #7:
+
+![case7](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case7.PNG)
+
+Test case #8: floating-point number expression
+
+```
+Input:17.5*(3-1)+3.0^3-12/(2+4)
+Output:60
+```
+
+Screenshot for case #8:
+
+![case8](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case8.PNG)
 
 #### Part 4. Difficulties & Solutions
 

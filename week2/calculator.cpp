@@ -1,7 +1,7 @@
 //calculator.cpp
 //Name: Weike Fang (22010055)
 //credit to Simple Snippet for the function InfixtoPostfix and precedence www.youtube.com/watch?v=dJESbyFR1sU
-//remaining: task3,5, 4needmore, double calculation with the floating point
+//credit to https://blog.csdn.net/weixin_41162823/article/details/80044079 for high-precision int addition/multiplication
 #include <iostream>
 #include <string>
 #include <stack>
@@ -12,7 +12,7 @@
 #include <vector>
 
 using namespace std;
-//credit to Simple Snippet
+//return whether a character is an operator
 bool isOperator(char c)
 {
     if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^')
@@ -24,6 +24,7 @@ bool isOperator(char c)
         return false;
     }
 }
+//return the precedence of the given operator
 int precedence(char c)
 {
     if (c == '^')
@@ -35,6 +36,7 @@ int precedence(char c)
     else
         return -1;
 }
+//convert Infix operation to PostFix
 string InfixToPostfix(stack<char> stack, string infix) //convert Infix operation to PostFix
 {
     string postfix;
@@ -108,6 +110,7 @@ string InfixToPostfix(stack<char> stack, string infix) //convert Infix operation
     }
     return postfix;
 }
+//return the result of a oprt b
 double operation(double a, double b, char oprt)
 {
     if (oprt == '+')
@@ -123,6 +126,7 @@ double operation(double a, double b, char oprt)
     else
         return -1000;
 }
+// evaluate Postfix expression
 double calc(string post)
 {
     stack<double> s;
@@ -158,6 +162,7 @@ double calc(string post)
     }
     return s.top();
 }
+//high-precision addition
 void add(char a[], char b[])
 {
     int alen = strlen(a), blen = strlen(b), t = 0, i;
@@ -220,7 +225,8 @@ void add(char a[], char b[])
     int len = i;
     for (; i > 0; i--)
     {
-        if (i == idx)
+        //'.'-'0'=-2, check if the digit should be a dot.
+        if (i == idx || a1[i]==-2) 
         {
             // res[len-i] = '.';
             cout << '.';
@@ -234,6 +240,7 @@ void add(char a[], char b[])
     // res[len] = '-1';
     // return res;
 }
+//high precision subtraction
 void substract(char a[], char b[])
 {
     int alen = strlen(a), blen = strlen(b), t = 0, i;
@@ -306,6 +313,7 @@ void substract(char a[], char b[])
     // res[len]= 't';
     // return res;
 }
+// high-precision multiplication
 void multiply(char a[], char b[]) // huge integer multiplication
 {
     int alen = strlen(a), blen = strlen(b), t = 0, i;
@@ -345,16 +353,18 @@ void multiply(char a[], char b[]) // huge integer multiplication
     //res[len+1] = 't'; // mark the stop
     //return res;
 }
+//operation for high-precision expression
 void operationLong(char a[], char b[], char oprt)
 {
     if (oprt == '+')
         add(a, b);
     else if (oprt == '-')
-        substract(a,b);
+        substract(b,a);
     else if (oprt == '*')
         multiply(a,b);
 }
-string longCalc(string post)
+//evaluate high-precision Postfix
+void longCalc(string post)
 {
     stack<string> s;
     string temp;
@@ -398,7 +408,6 @@ string longCalc(string post)
             operationLong(str1, str2, post[i]);
         }
     }
-    return s.top();
 }
 bool containLetter(string str)
 {
@@ -430,6 +439,7 @@ string findNum(string str)
     }
     return res;
 }
+//return whether the length of number exceeds a limit
 bool checkLen(string str)
 {
     string num = findNum(str);
@@ -452,6 +462,7 @@ bool checkLen(string str)
     }
     return res;
 }
+//return whether a character is letter
 bool isVar(string str)
 {
     bool res = true;
@@ -466,7 +477,7 @@ bool isVar(string str)
 int main()
 {
     string infix, postfix;
-    double result;
+    double result = -1900.1234;
     vector<int> num;
     vector<string> var;
     stack<char> s;
@@ -548,14 +559,14 @@ int main()
             {
                 longCalc(postfix); // deal with many digit calculation
                 cout <<endl;
-                continue;
             }        
             else
             {
                 result = calc(postfix);
             }
         }
-        cout << result << endl;
+        if(result != -1900.1234)
+            cout << result << endl;
         cin.clear();
         cin.sync();
         cin >> infix;
