@@ -31,7 +31,7 @@ Output:10
 
 Screen-shot for case #1:
 
-![image-20200927155905025](C:\Users\colin\AppData\Roaming\Typora\typora-user-images\image-20200927155905025.png)
+![case1](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case1.png)
 
 Test case #2:
 
@@ -42,7 +42,7 @@ Output:19
 
 Screen-shot for case #2:
 
-![image-20200927160107356](C:\Users\colin\AppData\Roaming\Typora\typora-user-images\image-20200927160107356.png)
+![case2](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case2.png)
 
 Test case #3:
 
@@ -57,7 +57,7 @@ Output:13
 
 Screen-shot for case #3:
 
-![image-20200927160239662](C:\Users\colin\AppData\Roaming\Typora\typora-user-images\image-20200927160239662.png)
+![case3](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case3.png)
 
 Test case #4:
 
@@ -72,7 +72,7 @@ Output:0.997485 //1.5 rad ~ pi/2 ~90°
 
 Screen-shot for case #4:
 
-![image-20200927160609352](C:\Users\colin\AppData\Roaming\Typora\typora-user-images\image-20200927160609352.png)
+![case4](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case4.png)
 
 Test case #5: high-precision addition
 
@@ -83,7 +83,7 @@ Output:100000000000000000000000000.22222222222222222222
 
 Screen-shot for case #5:
 
-![image-20200927160734338](C:\Users\colin\AppData\Roaming\Typora\typora-user-images\image-20200927160734338.png)
+![case5](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case5.png)
 
 Test case #6: high-precision multiplication
 
@@ -96,7 +96,7 @@ Such operation is something that I failed to implement in assignment 1. After fi
 
 Screenshot for case #6:
 
-![image-20200927161523711](C:\Users\colin\AppData\Roaming\Typora\typora-user-images\image-20200927161523711.png)
+![case6](C:\Users\colin\Desktop\SUSTech\cpp\SUSTech_cpp_HW\sustechcpp\week2\case6.png)
 
 #### Part 4. Difficulties & Solutions
 
