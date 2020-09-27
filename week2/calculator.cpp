@@ -483,8 +483,10 @@ int main()
     stack<char> s;
     cout << "Please enter what you want to calculate (Enter q to quit):" << endl;
     cin >> infix;
+    //Enter q to exit
     while (infix != "q")
     {
+        //If math functions are called
         if (containLetter(infix) && infix.find('=') == string::npos)
         {
             string temp = infix;
@@ -508,6 +510,7 @@ int main()
                 result = cos(myDb);
             }
         }
+        //If the input is a value assignment for a variable
         else if (infix.find('=') != string::npos)
         {
             string temp = infix;
@@ -551,6 +554,7 @@ int main()
             postfix = InfixToPostfix(s, temp);
             result = calc(postfix);
         }
+        //normal int/floating-point calculation
         else
         {
             postfix = InfixToPostfix(s, infix);
@@ -565,6 +569,7 @@ int main()
                 result = calc(postfix);
             }
         }
+        //If the result value isn't altered
         if(result != -1900.1234)
             cout << result << endl;
         cin.clear();
