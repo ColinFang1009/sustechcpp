@@ -57,8 +57,8 @@ void matmul3(size_t r1, size_t c, size_t c2, float *m1, float *m2, float *result
             for (size_t k = 0; k < c; k++)
             {
                 c0 = _mm256_add_ps(c0,
-                                   _mm256_mul_ps(_mm256_load_ps(m1 + i * c + k),         
-                                                 _mm256_broadcast_ss(m2 + k * c2 + j))); 
+                                   _mm256_mul_ps(_mm256_broadcast_ss(m1 + i * c + k),  //_mm256_load_ps(m1 + i * c + k)
+                                                 _mm256_load_ps(m2 + k * c2 + j))); //_mm256_broadcast_ss(m2 + k * c2 + j)
             }
             _mm256_store_ps(result + i * c2 + j, c0); // Cij = c0 
             ;
@@ -79,12 +79,12 @@ void matmul4(size_t r1, size_t c, size_t c2, float *m1, float *m2, float *result
             }
             for (size_t k = 0; k < c; k++)
             {
-                __m256 b = _mm256_broadcast_ss(m2 + k * c2 + j);
+                __m256 a = _mm256_broadcast_ss(m1 + i * c + k );
                 for (int x = 0; x < UNROLL; x++)
                 {
                     ca[x] = _mm256_add_ps(ca[x],
-                                          _mm256_mul_ps(_mm256_load_ps(m1 + i * c + k + x * 8),
-                                                        b));
+                                          _mm256_mul_ps(_mm256_load_ps(m2 + k * c2 + j+ x * 8),
+                                                        a));
                 }
             }
             for (int x = 0; x < UNROLL; x++)
@@ -108,12 +108,12 @@ static inline void do_block_f(size_t r1, size_t c, size_t c2, int si, int sj, in
             }
             for (int k = sk; k < sk + BLOCKSIZE; k++)
             {
-                __m256 b = _mm256_broadcast_ss(B + k * c2 + j);
+                __m256 a = _mm256_broadcast_ss(A + k  + i * c);
                 for (int x = 0; x < UNROLL; x++)
                 {
                     ca[x] = _mm256_add_ps(ca[x],
                                           _mm256_mul_ps(
-                                              _mm256_load_ps(A + k + x * 8 + i * c), b));
+                                              _mm256_load_ps(B + k * c2 + x*8 + j), a));
                 }
             }
 
@@ -166,9 +166,9 @@ void matCompare(size_t r1, size_t c1, size_t r2, size_t c2, float *m1, float *m2
             for (int j = 0; j < c1; j++)
             {
                 if (m1[i * c1 + j] > m2[i * c2 + j])
-                    diff += (m1[i * c1 + j] - m2[i * c2 + j]) / m1[i * c1 + j];
+                    diff += (m1[i * c1 + j] - m2[i * c2 + j]);// m1[i * c1 + j];
                 else
-                    diff += (m2[i * c1 + j] - m1[i * c2 + j]) / m2[i * c2 + j];
+                    diff += (m2[i * c1 + j] - m1[i * c2 + j]); // m2[i * c2 + j];
             }
         diff = diff / (r1 * c1);
         cout << "The percentage difference is around " << diff << endl;

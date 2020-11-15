@@ -12,9 +12,9 @@
 
 int main()
 {
-    size_t r1 = 10240; //m1 row
-    size_t c = 10240;// m1 column and m2 row
-    size_t c2 = 10240; // m2 column
+    size_t r1 = 1024; //m1 row
+    size_t c = 1024;// m1 column and m2 row
+    size_t c2 = 1024; // m2 column
 	float *m1 = new float[r1*c];
     float *m2 = new float[c*c2];
     float *res = new float[r1*c2];
@@ -23,7 +23,7 @@ int main()
 	{
 	 	float r2 = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX));
         float r1 = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX));
-        m1[i]=r1;
+        m1[i]=r1+i;
 	 	m2[i]=r2;
 	 	res[i]=0;
         res2[i]=0;
@@ -38,7 +38,7 @@ int main()
             << std::chrono::duration_cast<std::chrono::seconds>(end2 - start2).count() << "s.\n";
 
     auto start = std::chrono::steady_clock::now();
-	matmul6(r1,c,c2,m1,m2,res2);
+	matmul4(r1,c,c2,m1,m2,res2);
     auto end = std::chrono::steady_clock::now();
     std::cout << "Matmul6 Matrix product calculations took "
             << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "mus = "
