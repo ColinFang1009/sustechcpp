@@ -204,6 +204,7 @@ int main()
     showMat(res);
     delete m1.mat;
     delete m2.mat;
+    delete res.mat;
     delete[] data1;
     delete[] data2;
 

@@ -50,5 +50,6 @@ int main()
     delete m1;
     delete m2;
     delete res;
+    delete res2;
     return 0;
 }
