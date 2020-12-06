@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = 
 
-CXX_FLAGS = -std=gnu++11
+CXX_FLAGS = -O3 -march=native -std=gnu++11
 

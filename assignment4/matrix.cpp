@@ -17,6 +17,14 @@ Matrix::Matrix(int r, int c)
     refcount = new int;
     *refcount = 1;
 }
+Matrix::Matrix(int r, int c, float * p)
+{
+    row = r;
+    column = c;
+    data = p;
+    refcount = new int;
+    *refcount = 1;
+}
 Matrix::Matrix(int r, int c, float * p,int* rv)
 {
     row = r;
@@ -60,44 +68,56 @@ Matrix & Matrix::operator=(const Matrix & m)
 } 
 Matrix & Matrix::operator+(const Matrix & m) //mat+mat
 {
-    if(row != m.row || column != m.column)
+    if(row != m.row || column != m.column)// deal with size mismatch
     {
         std::cout << "The sizes do not match, return the original matrix."<<std::endl;
         return *this;
     }
     else
     {
+        int row_n = this->row;
+        int col_n = this->column;
+        Matrix * m_n = new Matrix(row_n,col_n);
         for(int i = 0;i<row;i++)
             for(int j=0;j<column;j++)
-                this->data[i*row+j] += m.data[i*row+j];
+                m_n->data[i*row+j] = this->data[i*row+j] + m.data[i*row+j];
+        return *m_n;
+        
     }
-    return *this;
         
 }
 Matrix & Matrix::operator-(const Matrix & m)  //mat-mat
 {
-    if(row != m.row || column != m.column)
+    if(row != m.row || column != m.column)// deal with size mismatch
     {
         std::cout << "The sizes do not match, return the original matrix."<<std::endl;
         return *this;
     }
     else
     {
+        int row_n = this->row;
+        int col_n = this->column;
+        Matrix * m_n = new Matrix(row_n,col_n);
         for(int i = 0;i<row;i++)
             for(int j=0;j<column;j++)
-                this->data[i*row+j] -= m.data[i*row+j];
+                m_n->data[i*row+j] = this->data[i*row+j] - m.data[i*row+j];
+        return *m_n;
     }
-    return *this;
 }
 Matrix & Matrix::operator*(const Matrix & m)  //mat * mat
 {
+    if(this->column != m.row)// deal with size mismatch
+    {
+        std::cout<<"Illegal multiplication, original value returned"<<std::endl;
+        return *this;
+    }
     int row_n = this->row;
     int col_n = m.column;
     Matrix * m_n = new Matrix(row_n,col_n);
     matmul_n(row_n,m.row,col_n,data,m.data,m_n->data);
     return *m_n;
 }
-Matrix & Matrix::operator*(const double d)  //mat * mat
+Matrix & Matrix::operator*(const double d)  //mat * d
 {
     int row_n = this->row;
     int col_n = this->column;
@@ -111,7 +131,8 @@ int Matrix::GetRow()
 
 int Matrix::GetColumn()
 {return column;}
-
+float * Matrix::GetData()
+{return data;}
 Matrix operator *(double real, const Matrix& other) // a * M
 {
     int row_n = other.row;
@@ -145,8 +166,12 @@ std::ostream & operator <<(std::ostream & os, const Matrix & m )
 void Matrix::release()
 {
     if(*refcount == 1)
+    {
         delete[] data;
+        delete[] refcount;
+    }
     else
         CV_XADD(refcount, -1);
     refcount = NULL;
 }
+
