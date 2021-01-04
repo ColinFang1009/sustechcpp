@@ -6,7 +6,7 @@
 #include <immintrin.h>
 #define UNROLL 4     //4
 #define BLOCKSIZE 64 //32
-//USE class template to deal with int/float/double/¡­ different cases !
+//USE class template to deal with int/float/double/â€¦ different cases !
 
 using namespace cv;
 
@@ -78,7 +78,7 @@ float* convNN_v1(float* weight, float* bias, float* matData, int stride, int ker
     float* matNew = new float[n];
     for (int i = 0; i < n; i++)
         matNew[i] = 0.0f;
-    //feature map = floor[(n+2p-f)/s]+1 n=input size(l/w), p=padding£¬f=filter/kernel size(width/length), s = stride;
+    //feature map = floor[(n+2p-f)/s]+1 n=input size(l/w), p=paddingï¼Œf=filter/kernel size(width/length), s = stride;
    //floor to deal with remainder;
     int outSize = (sizeNew + 2 * padding - kerSize) / stride + 1; // take the floor value if there is remainder
     if (padding > 0)
@@ -150,7 +150,7 @@ float* convNN(float* weight, float * bias, float* matData, int stride, int kerSi
     float * matNew = new float[n];
     for (int i = 0; i < n; i++)
         matNew[i] = 0.0f;
-    //feature map = floor[(n+2p-f)/s]+1 n=input size(l/w), p=padding£¬f=filter/kernel size(width/length), s = stride;
+    //feature map = floor[(n+2p-f)/s]+1 n=input size(l/w), p=paddingï¼Œf=filter/kernel size(width/length), s = stride;
    //floor to deal with remainder;
     int outSize = (sizeNew + 2 * padding - kerSize) / stride + 1; // take the floor value if there is remainder
     if (padding > 0)
@@ -408,7 +408,7 @@ float* fullyConnected(float* matData, float* weight, float* bias, int row, int c
 int main()
 {
     Mat image = imread("face3.jpg"); //face.jpg bg.jpg
-    imshow("ÎÒµÄÍ¼Æ¬", image);
+    imshow("æˆ‘çš„å›¾ç‰‡", image);
     
     float * img = convert2(image);
 
