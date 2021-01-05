@@ -2,14 +2,11 @@
 #include <opencv2\opencv.hpp> //D:\Software\opencv\build\include
 #include <math.h>
 #include <ctime>
-#include <omp.h>
-#include <immintrin.h>
-#define UNROLL 4     //4
-#define BLOCKSIZE 64 //32
-//USE class template to deal with int/float/double/… different cases !
+#include <omp.h> 
+
+//USE class template to deal with int/float/double/… different cases
 
 using namespace cv;
-
 //weight and bias
 
 //out_channels, in_channels, kernel_size_h, kernel_size_w
@@ -47,7 +44,6 @@ float * convert(Mat image)
         }
     }
     return img;
-    //delete[] img;
 }
 
 float* convert2(Mat image)
@@ -71,78 +67,6 @@ float* convert2(Mat image)
     return img;
 }
 //do convolution
-float* convNN_v1(float* weight, float* bias, float* matData, int stride, int kerSize, int matSize, int in_channel, int out_channel, int padding = 0)
-{
-    int sizeNew = matSize + padding * 2;
-    int n = sizeNew * sizeNew * in_channel;
-    float* matNew = new float[n];
-    for (int i = 0; i < n; i++)
-        matNew[i] = 0.0f;
-    //feature map = floor[(n+2p-f)/s]+1 n=input size(l/w), p=padding，f=filter/kernel size(width/length), s = stride;
-   //floor to deal with remainder;
-    int outSize = (sizeNew + 2 * padding - kerSize) / stride + 1; // take the floor value if there is remainder
-    if (padding > 0)
-    {
-        for (int i = 0; i < matSize; i++)
-            for (int j = 0; j < matSize; j++)
-            {
-                for (int c = 0; c < in_channel; c++)
-                    matNew[(i + 1) * sizeNew * in_channel + (j + 1) * in_channel + c] = matData[i * matSize * in_channel + j * in_channel + c];//row - 1 and col - 1
-            }
-    }
-    else
-    {
-        matNew = matData;
-    }
-    int n_outMat = outSize * outSize * out_channel;
-    float* outMat = new float[n_outMat];
-    for (int i = 0; i < n_outMat; i++)
-        outMat[i] = 0.0f;
-    int n_kerneloi = kerSize * kerSize * in_channel;
-    float* kernel_oi = new float[n_kerneloi];
-    for (int i = 0; i < kerSize * kerSize * in_channel; i++)
-        kernel_oi[i] = 0.0f;
-    for (int o = 0; o < out_channel; ++o)
-    {
-        for (int i = 0; i < in_channel; ++i)
-        {
-            // weights
-            kernel_oi[0 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 0];
-            kernel_oi[1 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 1];
-            kernel_oi[2 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 2];
-            kernel_oi[3 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 3];
-            kernel_oi[4 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 4];
-            kernel_oi[5 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 5];
-            kernel_oi[6 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 6];
-            kernel_oi[7 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 7];
-            kernel_oi[8 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 8];
-        }
-        
-        for (int i = 0; i < outSize; i++)
-            for (int j = 0; j < outSize; j++)
-            {
-                
-                for (int c = 0; c < in_channel; c++)
-                {
-                    outMat[i * outSize * out_channel + j * out_channel + o] +=
-                        kernel_oi[1 + c * 9] * matNew[stride * i * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        kernel_oi[2 + c * 9] * matNew[stride * i * sizeNew * in_channel + (stride * j + 2) * in_channel + c ] +
-                        kernel_oi[3 + c * 9] * matNew[(stride * i + 1) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        kernel_oi[4 + c * 9] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        kernel_oi[5 + c * 9] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        kernel_oi[6 + c * 9] * matNew[(stride * i + 2) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        kernel_oi[7 + c * 9] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        kernel_oi[8 + c * 9] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 2) * in_channel + c];
-                }
-                outMat[i * outSize * out_channel + j * out_channel + o]  += bias[o];
-            }
-    }
-
-    return outMat;
-    //delete[] matNew;
-    //delete[] outMat;
-    //delete[] kernel_oi;
-}
 float* convNN(float* weight, float * bias, float* matData, int stride, int kerSize, int matSize, int in_channel, int out_channel, int padding=0)
 {
     int sizeNew = matSize + padding*2;
@@ -169,22 +93,16 @@ float* convNN(float* weight, float * bias, float* matData, int stride, int kerSi
     int n_outMat = outSize * outSize * out_channel;
     float * outMat = new float[n_outMat];
 
-    for (int o = 0; o < out_channel; o+=4)
+    for (int o = 0; o < out_channel; ++o)
     {
-        float temp1 = 0.0f;
-        float temp2 = 0.0f;
-        float temp3 = 0.0f;
-        float temp4 = 0.0f;
+        float temp = 0.0;
         for (int i = 0; i < outSize; i++)
             for (int j = 0; j < outSize; j++)
             {
-                temp1 = 0.0f;
-                temp2 = 0.0f;
-                temp4 = 0.0f;
-                temp3 = 0.0f;
+                temp = 0.0;
                 for (int c = 0; c < in_channel; c++)
                 {
-                    temp1 +=
+                    temp +=
                         weight[o * (in_channel * 3 * 3) + c * (3 * 3) + 0] * matNew[stride * i * sizeNew * in_channel + stride * j * in_channel + c] +  //matNew row = i*stride, col = j*stride, channel = c
                         weight[o * (in_channel * 3 * 3) + c * (3 * 3) + 1] * matNew[stride * i * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
                         weight[o * (in_channel * 3 * 3) + c * (3 * 3) + 2] * matNew[stride * i * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
@@ -194,48 +112,12 @@ float* convNN(float* weight, float * bias, float* matData, int stride, int kerSi
                         weight[o * (in_channel * 3 * 3) + c * (3 * 3) + 6] * matNew[(stride * i + 2) * sizeNew * in_channel + stride * j * in_channel + c] +
                         weight[o * (in_channel * 3 * 3) + c * (3 * 3) + 7] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
                         weight[o * (in_channel * 3 * 3) + c * (3 * 3) + 8] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 2) * in_channel + c];
-                    temp2 +=
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 0] * matNew[stride * i * sizeNew * in_channel + stride * j * in_channel + c] +  //matNew row = i*stride, col = j*stride, channel = c
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 1] * matNew[stride * i * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 2] * matNew[stride * i * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 3] * matNew[(stride * i + 1) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 4] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 5] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 6] * matNew[(stride * i + 2) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 7] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 1) * (in_channel * 3 * 3) + c * (3 * 3) + 8] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 2) * in_channel + c];
-                    temp3 +=
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 0] * matNew[stride * i * sizeNew * in_channel + stride * j * in_channel + c] +  //matNew row = i*stride, col = j*stride, channel = c
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 1] * matNew[stride * i * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 2] * matNew[stride * i * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 3] * matNew[(stride * i + 1) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 4] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 5] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 6] * matNew[(stride * i + 2) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 7] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 2) * (in_channel * 3 * 3) + c * (3 * 3) + 8] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 2) * in_channel + c];
-                   temp4 +=
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 0] * matNew[stride * i * sizeNew * in_channel + stride * j * in_channel + c] +  //matNew row = i*stride, col = j*stride, channel = c
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 1] * matNew[stride * i * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 2] * matNew[stride * i * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 3] * matNew[(stride * i + 1) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 4] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 5] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 6] * matNew[(stride * i + 2) * sizeNew * in_channel + stride * j * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 7] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
-                        weight[(o + 3) * (in_channel * 3 * 3) + c * (3 * 3) + 8] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 2) * in_channel + c];
                 }
-                outMat[i * outSize * out_channel + j * out_channel + o] =  temp1 + bias[o];
-                outMat[i * outSize * out_channel + j * out_channel + o+1] = temp2 + bias[o+1];
-                outMat[i * outSize * out_channel + j * out_channel + o+2] = temp3 + bias[o+2];
-                outMat[i * outSize * out_channel + j * out_channel + o+3] = temp4 + bias[o+3];
+                outMat[i * outSize * out_channel + j * out_channel + o] = temp + bias[o];
             }
     }
 
     return outMat;
-    //delete[] matNew;
-    //delete[] outMat;
-    //delete[] kernel_oi;
 }
 void ReLU(float* data, int size)
 {
@@ -249,7 +131,6 @@ void ReLU(float* data, int size)
 }
 float max(float a, float b, float c, float d)
 {
-    //float temp1, temp2;
     float out= a;
     if (b > out)
         out = b;
@@ -257,40 +138,7 @@ float max(float a, float b, float c, float d)
         out = c;
     if (d > out)
         out = d;
-    //temp1 = (a > b) ? a : b;
-    //temp2 = (c > d) ? c : d;
-    //out = (temp1 > temp2) ? temp1 : temp2;
     return out;
-}
-static inline void do_block_f(size_t r1, size_t c, size_t c2, int si, int sj, int sk,
-    float* A, float* B, float* C)
-{
-    for (int i = si; i < si + BLOCKSIZE; i++)
-    {
-        for (int j = sj; j < sj + BLOCKSIZE; j += UNROLL * 8)
-        {
-            __m256 ca[UNROLL];
-            for (int x = 0; x < UNROLL; x++)
-            {
-                ca[x] = _mm256_load_ps(C + i * c2 + x * 8 + j);
-            }
-            for (int k = sk; k < sk + BLOCKSIZE; k++)
-            {
-                __m256 b = _mm256_broadcast_ss(B + k * c2 + j);
-                for (int x = 0; x < UNROLL; x++)
-                {
-                    ca[x] = _mm256_add_ps(ca[x],
-                        _mm256_mul_ps(
-                            _mm256_load_ps(A + k + x * 8 + i * c), b));
-                }
-            }
-
-            for (int x = 0; x < UNROLL; x++)
-            {
-                _mm256_store_ps(C + i * c2 + x * 8 + j, ca[x]);
-            }
-        }
-    }
 }
 void matmul2(int r1, int c, int c2, float* m1, float* m2, float* result)
 {
@@ -308,40 +156,6 @@ void matmul2(int r1, int c, int c2, float* m1, float* m2, float* result)
         }
     }
 }
-void matmul3(size_t r1, size_t c, size_t c2, float* m1, float* m2, float* result)
-{
-    //m1: r1*c, m2: c*c2, result: r1*c2
-    //each _mm256 can store 8 float,(=8*4 byte = 256bit)
-    for (size_t i = 0; i < r1; i++)
-    {
-        for (size_t j = 0; j < c2; j += 8)
-        {
-            __m256 c0 = _mm256_load_ps(result + i * c2 + j); // c0 = Cij
-            for (size_t k = 0; k < c; k++)
-            {
-                c0 = _mm256_add_ps(c0,
-                    _mm256_mul_ps(_mm256_load_ps(m1 + i * c + k),
-                        _mm256_broadcast_ss(m2 + k * c2 + j)));
-            }
-            _mm256_store_ps(result + i * c2 + j, c0); // Cij = c0 
-            ;
-        }
-    }
-}
-void matmul6(size_t r1, size_t c, size_t c2, float* m1, float* m2, float* result)
-{
-#pragma omp parallel for
-    for (int sj = 0; sj < c2; sj += BLOCKSIZE)
-    {
-        for (int si = 0; si < r1; si += BLOCKSIZE)
-        {
-            for (int sk = 0; sk < c; sk += BLOCKSIZE)
-            {
-                do_block_f(r1, c, c2, si, sj, sk, m1, m2, result);
-            }
-        }
-    }
-}
 float* maxPooling(float* matData, int row, int col, int channel)
 {
     if (row % 2 != 0 || col % 2 != 0)
@@ -353,25 +167,16 @@ float* maxPooling(float* matData, int row, int col, int channel)
     {
         int n_matOut = row / 2 * col / 2 * channel;
         float * matOut = new float[n_matOut];
-        //for (int i = 0; i < row / 2 * col / 2 * channel; i++)
-        //    matOut[i] = 0.0f;
         for(int i = 0;i<row/2;i++)
             for(int j = 0;j<col/2;j++)
                 for (int c = 0; c < channel; c++)
-                {
-                    //element (i,j) in matOut corresponds the 2x2 submatrix starting from matData(2*i,2*j)
-                    //float a00 = matData[2 * i * col * channel + 2 * j * channel + c];
-                    //float a01 = matData[2 * i * col * channel + 2 * j * channel + c + channel*1];
-                    //float a10 = matData[(2 * i + 1) * col * channel + 2 * j * channel + c];
-                    //float a11 = matData[(2 * i + 1) * col * channel + 2 * j * channel + c + channel*1];
+                {                
                     matOut[i * col / 2 * channel + j * channel + c] = max(matData[2 * i * col * channel + 2 * j * channel + c],
                                                                           matData[2 * i * col * channel + (2 * j + 1) * channel + c],
                                                                           matData[(2 * i + 1) * col * channel + 2 * j * channel + c],
                                                                           matData[(2 * i + 1) * col * channel + (2 * j + 1) * channel + c]);
-                    //matOut[i * col / 2 * channel + j * channel + c] = max(a00, a01, a10, a11);
                 }
         return matOut;
-        //delete[] matOut;
     }
 }
 
@@ -380,8 +185,6 @@ float* fullyConnected(float* matData, float* weight, float* bias, int row, int c
     //flatten
     int size = row * col * channel;
     float * matFlat = new float[size];
-    //for (int i = 0; i < row * col * channel; i++)
-    //    matFlat[i] = 0.0f;
     for (int c = 0; c < channel; c++)
         for (int i = 0; i < row; i++)
             for (int j = 0; j < col; j++)
@@ -396,35 +199,24 @@ float* fullyConnected(float* matData, float* weight, float* bias, int row, int c
         output[i] += bias[i];
         sum += exp(output[i]);//(float) pow(2.71828183, output[i]);
     }
-    //softmax exp(output[i])
-    //float sum = exp(output[0]) + exp(output[1]); //sum for softmax
     for (int i = 0; i < out_feature; i++)
     {
         output[i] = (float)exp(output[i]) / sum;
     }
     return output;
-    //delete[] output;
 }
 int main()
 {
-    Mat image = imread("face3.jpg"); //face.jpg bg.jpg
-    imshow("我的图片", image);
-    
+    Mat image = imread("face_1.jpg"); //face.jpg bg.jpg
+    imshow("MyPic", image);
+    waitKey(0);
     float * img = convert2(image);
-
-    //std::cout << img[0] << " " << img[1] << " " << img[2] << std::endl;
-    //std::cout << image.rows << " " << image.cols << std::endl;
     auto start = std::chrono::steady_clock::now();
     float * img0_cnn = convNN(conv0_weight, conv0_bias, img, 2, 3, 128, 3, 16, 1);//h=64, w=64, c=16
     auto end = std::chrono::steady_clock::now();
 
     auto start2 = std::chrono::steady_clock::now();
-    for (int i = 0; i < 64 * 64 * 16; i++)
-    {
-        if (img0_cnn[i] < 0)
-            img0_cnn[i] = 0;
-    }
-    //ReLU(img0_cnn, 64 * 64 * 16);
+    ReLU(img0_cnn, 64 * 64 * 16);
     auto end2 = std::chrono::steady_clock::now();
 
     auto start3 = std::chrono::steady_clock::now();
@@ -436,12 +228,7 @@ int main()
     auto end4 = std::chrono::steady_clock::now();
 
     auto start5 = std::chrono::steady_clock::now();
-    for (int i = 0; i < 30 * 30 * 32; i++)
-    {
-        if (img1_cnn[i] < 0)
-            img1_cnn[i] = 0;
-    }
-    //ReLU(img1_cnn, 30 * 30 * 32);
+    ReLU(img1_cnn, 30 * 30 * 32);
     auto end5 = std::chrono::steady_clock::now();
 
     auto start6 = std::chrono::steady_clock::now();
@@ -453,14 +240,8 @@ int main()
     auto end7 = std::chrono::steady_clock::now();
 
     auto start8 = std::chrono::steady_clock::now();
-    for (int i = 0; i < 8 * 8 * 32; i++)
-    {
-        if (img2_cnn[i] < 0)
-            img2_cnn[i] = 0;
-    }
-    //ReLU(img2_cnn, 8 * 8 * 32);
+    ReLU(img2_cnn, 8 * 8 * 32);
     auto end8 = std::chrono::steady_clock::now();
-    //float* img2_mp = maxPooling(img2_cnn, 16, 16, 32); // 8 8 32;
 
     auto start9 = std::chrono::steady_clock::now();
     float* result = fullyConnected(img2_cnn, fc0_weight, fc0_bias, 8, 8, 32, 2);
@@ -489,18 +270,6 @@ int main()
         << std::chrono::duration_cast<std::chrono::microseconds>(end9 - start).count() << "mus = "
         << std::chrono::duration_cast<std::chrono::milliseconds>(end9 - start).count() << "ms ="
         << std::chrono::duration_cast<std::chrono::seconds>(end9 - start).count() << "s.\n";
-    //const uchar* current = image.ptr<uchar>(0);
-    //std::cout << (double)current[0] << " " << (double)current[1] << " " << (double)current[2] << std::endl;
 
-    waitKey(0);
-    //float a[6]={1.0f, 1.0f, 1.0f, 2.0f, 2.0f, 2.0f};
-    //float b[6]={1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-    //Mat A(2, 3, CV_32FC1, a);
-    //Mat B(3, 2, CV_32FC1, b);
-
-    //Mat C = A * B;
-
-    //std::cout << "Matrix C = " << std::endl 
-    //     << C << std::endl;
     return 0;
 }
