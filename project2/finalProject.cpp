@@ -3,7 +3,8 @@
 #include <math.h>
 #include <ctime>
 #include <omp.h> 
-
+#define UNROLL 4     //4
+#define BLOCKSIZE 64 //32
 //USE class template to deal with int/float/double/… different cases
 
 using namespace cv;
@@ -67,6 +68,71 @@ float* convert2(Mat image)
     return img;
 }
 //do convolution
+//Function Templates
+template <typename T>
+T* convNN_tmplt(T* weight, T* bias, T* matData, int stride, int kerSize, int matSize, int in_channel, int out_channel, int padding = 0)
+{
+    int sizeNew = matSize + padding * 2;
+    int n = sizeNew * sizeNew * in_channel;
+    T* matNew = new T[n];
+    for (int i = 0; i < n; i++)
+        matNew[i] = (T)0;
+    int outSize = (sizeNew + 2 * padding - kerSize) / stride + 1; // take the floor value if there is remainder
+    if (padding > 0)
+    {
+        for (int i = 0; i < matSize; i++)
+            for (int j = 0; j < matSize; j++)
+                for (int c = 0; c < in_channel; c++)
+                    matNew[(i + 1) * sizeNew * in_channel + (j + 1) * in_channel + c] = matData[i * matSize * in_channel + j * in_channel + c];
+
+    }
+    else
+        matNew = matData;
+    int n_outMat = outSize * outSize * out_channel;
+    T* outMat = new T[n_outMat];
+    for (int i = 0; i < n_outMat; i++)
+        outMat[i] = (T)0;
+    int n_kerneloi = kerSize * kerSize * in_channel;
+    T* kernel_oi = new T[n_kerneloi];
+    for (int o = 0; o < out_channel; ++o)
+    {
+        for (int i = 0; i < in_channel; ++i)
+        {
+            // weights
+            kernel_oi[0 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 0];
+            kernel_oi[1 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 1];
+            kernel_oi[2 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 2];
+            kernel_oi[3 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 3];
+            kernel_oi[4 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 4];
+            kernel_oi[5 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 5];
+            kernel_oi[6 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 6];
+            kernel_oi[7 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 7];
+            kernel_oi[8 + i * 9] = weight[o * (in_channel * 3 * 3) + i * (3 * 3) + 8];
+        }
+
+        for (int i = 0; i < outSize; i++)
+            for (int j = 0; j < outSize; j++)
+            {
+
+                for (int c = 0; c < in_channel; c++)
+                {
+                    outMat[i * outSize * out_channel + j * out_channel + o] +=
+                        kernel_oi[0 + c * 9] * matNew[stride * i * sizeNew * in_channel + (stride * j) * in_channel + c] +
+                        kernel_oi[1 + c * 9] * matNew[stride * i * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
+                        kernel_oi[2 + c * 9] * matNew[stride * i * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
+                        kernel_oi[3 + c * 9] * matNew[(stride * i + 1) * sizeNew * in_channel + stride * j * in_channel + c] +
+                        kernel_oi[4 + c * 9] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
+                        kernel_oi[5 + c * 9] * matNew[(stride * i + 1) * sizeNew * in_channel + (stride * j + 2) * in_channel + c] +
+                        kernel_oi[6 + c * 9] * matNew[(stride * i + 2) * sizeNew * in_channel + stride * j * in_channel + c] +
+                        kernel_oi[7 + c * 9] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 1) * in_channel + c] +
+                        kernel_oi[8 + c * 9] * matNew[(stride * i + 2) * sizeNew * in_channel + (stride * j + 2) * in_channel + c];
+                }
+                outMat[i * outSize * out_channel + j * out_channel + o] += bias[o];
+            }
+    }
+    return outMat;
+}
+
 float* convNN(float* weight, float * bias, float* matData, int stride, int kerSize, int matSize, int in_channel, int out_channel, int padding=0)
 {
     int sizeNew = matSize + padding*2;
@@ -152,6 +218,70 @@ void matmul2(int r1, int c, int c2, float* m1, float* m2, float* result)
             for (int j = 0; j < c2; ++j)
             {
                 result[i * (c2)+j] += s * m2[k * (c2)+j];
+            }
+        }
+    }
+}
+static inline void do_block_f(size_t r1, size_t c, size_t c2, int si, int sj, int sk,
+    float* A, float* B, float* C)
+{
+    for (int i = si; i < si + BLOCKSIZE; i++)
+    {
+        for (int j = sj; j < sj + BLOCKSIZE; j += UNROLL * 8)
+        {
+            __m256 ca[UNROLL];
+            for (int x = 0; x < UNROLL; x++)
+            {
+                ca[x] = _mm256_load_ps(C + i * c2 + x * 8 + j);
+            }
+            for (int k = sk; k < sk + BLOCKSIZE; k++)
+            {
+                __m256 b = _mm256_broadcast_ss(B + k * c2 + j);
+                for (int x = 0; x < UNROLL; x++)
+                {
+                    ca[x] = _mm256_add_ps(ca[x],
+                        _mm256_mul_ps(
+                            _mm256_load_ps(A + k + x * 8 + i * c), b));
+                }
+            }
+
+            for (int x = 0; x < UNROLL; x++)
+            {
+                _mm256_store_ps(C + i * c2 + x * 8 + j, ca[x]);
+            }
+        }
+    }
+}
+void matmul3(size_t r1, size_t c, size_t c2, float* m1, float* m2, float* result)
+{
+    //m1: r1*c, m2: c*c2, result: r1*c2
+    //each _mm256 can store 8 float,(=8*4 byte = 256bit)
+    for (size_t i = 0; i < r1; i++)
+    {
+        for (size_t j = 0; j < c2; j += 8)
+        {
+            __m256 c0 = _mm256_load_ps(result + i * c2 + j); // c0 = Cij
+            for (size_t k = 0; k < c; k++)
+            {
+                c0 = _mm256_add_ps(c0,
+                    _mm256_mul_ps(_mm256_load_ps(m1 + i * c + k),
+                        _mm256_broadcast_ss(m2 + k * c2 + j)));
+            }
+            _mm256_store_ps(result + i * c2 + j, c0); // Cij = c0 
+            ;
+        }
+    }
+}
+void matmul6(size_t r1, size_t c, size_t c2, float* m1, float* m2, float* result)
+{
+#pragma omp parallel for
+    for (int sj = 0; sj < c2; sj += BLOCKSIZE)
+    {
+        for (int si = 0; si < r1; si += BLOCKSIZE)
+        {
+            for (int sk = 0; sk < c; sk += BLOCKSIZE)
+            {
+                do_block_f(r1, c, c2, si, sj, sk, m1, m2, result);
             }
         }
     }
